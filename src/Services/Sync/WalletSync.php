@@ -174,8 +174,8 @@ class WalletSync extends BaseConsole
             [
                 'in' => true,
                 'out' => true,
-                'pending' => true,
-                'pool' => true,
+//                'pending' => true,
+//                'pool' => true,
                 'all_accounts' => true
             ]
         );
@@ -214,7 +214,9 @@ class WalletSync extends BaseConsole
                 'address' => $item['address'],
                 'type' => $item['type'],
                 'amount' => (string)$amount,
+                'amount_usd' => (string)$this->convertToUsd($amount),
                 'fee' => (string)$fee,
+                'fee_usd' => (string)$this->convertToUsd($fee),
                 'block_height' => ($item['height'] ?? 0) ?: null,
                 'confirmations' => $item['confirmations'] ?? 0,
                 'time_at' => Date::createFromTimestamp($item['timestamp']),
@@ -233,7 +235,9 @@ class WalletSync extends BaseConsole
                 'address' => $item['address'],
                 'type' => $item['type'],
                 'amount' => (string)$amount,
+                'amount_usd' => (string)$this->convertToUsd($amount),
                 'fee' => (string)$fee,
+                'fee_usd' => (string)$this->convertToUsd($fee),
                 'block_height' => ($item['height'] ?? 0) ?: null,
                 'confirmations' => $item['confirmations'] ?? 0,
                 'time_at' => Date::createFromTimestamp($item['timestamp']),
@@ -247,11 +251,31 @@ class WalletSync extends BaseConsole
             Monero::getModelTransaction()::upsert(
                 $rows,
                 ['txid', 'address'],
-                ['type', 'amount', 'block_height', 'confirmations', 'time_at', 'data', 'updated_at']
+                ['type', 'amount', 'amount_usd', 'fee', 'fee_usd', 'block_height', 'confirmations', 'time_at', 'data', 'updated_at']
             );
         }
 
         return $this;
+    }
+
+    protected function convertToUsd(BigDecimal $amount): BigDecimal
+    {
+        $serviceClass = config('monero.exchange_rate_service');
+
+        if (!$serviceClass) {
+            return BigDecimal::zero();
+        }
+
+        try {
+            $service = app($serviceClass);
+            return $service->convertToUsd('XMR', $amount);
+        } catch (\Exception $e) {
+            Log::warning('Monero: Failed to convert to USD', [
+                'amount' => (string)$amount,
+                'error' => $e->getMessage(),
+            ]);
+            return BigDecimal::zero();
+        }
     }
 
     protected function runWebhooks(): self

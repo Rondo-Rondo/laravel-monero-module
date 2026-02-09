@@ -74,5 +74,7 @@ return [
             'max' => 32767
         ],
         'watcher_period' => 30,
-    ]
+    ],
+
+    'exchange_rate_service' => null
 ];
