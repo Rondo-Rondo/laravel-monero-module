@@ -231,4 +231,12 @@ class Api
             'account_index' => $accountIndex,
         ]);
     }
+
+    public function getAddressByIndex(int $accountIndex, array $addressIndices): array
+    {
+        return $this->request('get_address', [
+            'account_index' => $accountIndex,
+            'address_index' => $addressIndices,
+        ]);
+    }
 }
