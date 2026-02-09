@@ -16,9 +16,9 @@ return new class extends Migration {
             $table->string('address')->index();
             $table->enum('type', ['in', 'out', 'pool']);
             $table->decimal('amount', 30, 12);
-            $table->decimal('amount_usd', 30, 12);
+            $table->decimal('amount_usd', 30, 12)->default(0);
             $table->decimal('fee', 30, 12);
-            $table->decimal('fee_usd', 30, 12);
+            $table->decimal('fee_usd', 30, 12)->default(0);
             $table->bigInteger('block_height')
                 ->nullable();
             $table->integer('confirmations');
