@@ -166,6 +166,9 @@ class WalletSync extends BaseConsole
         return $this;
     }
 
+    /**
+     * @throws \Exception
+     */
     protected function incomingTransfers(): self
     {
         $this->log("Запрашиваем историю входящих переводов...");
@@ -181,7 +184,8 @@ class WalletSync extends BaseConsole
         );
         $this->log('История получена: '.json_encode($getTransfers));
 
-        $transfers = array_merge($getTransfers['pool'] ?? [], $getTransfers['in'] ?? []);
+//        $transfers = array_merge($getTransfers['pool'] ?? [], $getTransfers['in'] ?? []);
+        $transfers = array_merge([], $getTransfers['in'] ?? []);
 
         $rows = [];
 
