@@ -47,10 +47,10 @@ trait Transfers
             $wallet = $account->wallet;
             $api = $wallet->node->api();
 
-            if( !$wallet->node->isLocal() ) {
+//            if( !$wallet->node->isLocal() ) {
                 $api->openWallet($wallet->name, $wallet->password);
                 $api->refresh();
-            }
+//            }
 
             return $api->request('transfer', [
                 'destinations' => [
