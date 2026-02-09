@@ -255,7 +255,7 @@ class WalletSync extends BaseConsole
             Monero::getModelTransaction()::upsert(
                 $rows,
                 ['txid', 'address'],
-                ['type', 'amount', 'amount_usd', 'fee', 'fee_usd', 'block_height', 'confirmations', 'time_at', 'data', 'updated_at']
+                ['type', 'amount', 'fee', 'block_height', 'confirmations', 'time_at', 'data', 'updated_at']
             );
         }
 
