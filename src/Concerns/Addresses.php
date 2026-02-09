@@ -15,9 +15,9 @@ trait Addresses
             $wallet = $account->wallet;
             $api = $wallet->node->api();
 
-            if( !$wallet->node->isLocal() ) {
-                $api->openWallet($wallet->name, $wallet->password);
-            }
+//            if( !$wallet->node->isLocal() ) {
+            $api->openWallet($wallet->name, $wallet->password);
+//            }
 
             $createAddress = $api->createAddress($account->account_index);
 
