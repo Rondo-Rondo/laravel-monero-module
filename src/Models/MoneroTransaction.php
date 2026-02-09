@@ -15,6 +15,9 @@ class MoneroTransaction extends Model
         'address',
         'type',
         'amount',
+        'amount_usd',
+        'fee',
+        'fee_usd',
         'block_height',
         'confirmations',
         'time_at',
@@ -23,6 +26,9 @@ class MoneroTransaction extends Model
 
     protected $casts = [
         'amount' => BigDecimalCast::class,
+        'amount_usd' => BigDecimalCast::class,
+        'fee' => BigDecimalCast::class,
+        'fee_usd' => BigDecimalCast::class,
         'confirmations' => 'integer',
         'time_at' => 'datetime',
         'data' => 'array',

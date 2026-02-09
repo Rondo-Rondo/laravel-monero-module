@@ -14,8 +14,11 @@ return new class extends Migration {
             $table->id();
             $table->string('txid')->index();
             $table->string('address')->index();
-            $table->enum('type', ['in', 'out']);
+            $table->enum('type', ['in', 'out', 'pool']);
             $table->decimal('amount', 30, 12);
+            $table->decimal('amount_usd', 30, 12);
+            $table->decimal('fee', 30, 12);
+            $table->decimal('fee_usd', 30, 12);
             $table->bigInteger('block_height')
                 ->nullable();
             $table->integer('confirmations');

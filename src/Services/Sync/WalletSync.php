@@ -187,6 +187,7 @@ class WalletSync extends BaseConsole
 
         foreach ($transfers as $item) {
             $amount = (BigDecimal::of($item['amount'] ?: '0'))->dividedBy(pow(10, 12), 12);
+            $fee = (BigDecimal::of($item['fee'] ?: '0'))->dividedBy(pow(10, 12), 12);
 
             $address = $this->wallet
                 ->addresses()
@@ -213,6 +214,7 @@ class WalletSync extends BaseConsole
                 'address' => $item['address'],
                 'type' => $item['type'],
                 'amount' => (string)$amount,
+                'fee' => (string)$fee,
                 'block_height' => ($item['height'] ?? 0) ?: null,
                 'confirmations' => $item['confirmations'] ?? 0,
                 'time_at' => Date::createFromTimestamp($item['timestamp']),
@@ -224,12 +226,14 @@ class WalletSync extends BaseConsole
 
         foreach( $getTransfers['out'] ?? [] as $item ) {
             $amount = (BigDecimal::of($item['amount'] ?: '0'))->dividedBy(pow(10, 12), 12);
+            $fee = (BigDecimal::of($item['fee'] ?: '0'))->dividedBy(pow(10, 12), 12);
 
             $rows[] = [
                 'txid' => $item['txid'],
                 'address' => $item['address'],
                 'type' => $item['type'],
                 'amount' => (string)$amount,
+                'fee' => (string)$fee,
                 'block_height' => ($item['height'] ?? 0) ?: null,
                 'confirmations' => $item['confirmations'] ?? 0,
                 'time_at' => Date::createFromTimestamp($item['timestamp']),

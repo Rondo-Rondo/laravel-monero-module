@@ -6,7 +6,7 @@ Organization of payment acceptance and automation of payments of XMR coins on th
 
 You can install the package via composer:
 ```bash
-composer require mollsoft/laravel-monero-module
+composer require rondo-rondo/laravel-monero-module
 ```
 
 After you can run installer using command:

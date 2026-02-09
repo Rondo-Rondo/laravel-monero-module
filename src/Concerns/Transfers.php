@@ -49,6 +49,7 @@ trait Transfers
 
             if( !$wallet->node->isLocal() ) {
                 $api->openWallet($wallet->name, $wallet->password);
+                $api->refresh();
             }
 
             return $api->request('transfer', [
@@ -89,7 +90,7 @@ trait Transfers
                 'do_not_relay' => true,
             ]);
 
-            $fee = BigDecimal::of($preview['fee'] ?: '0')->dividedBy(pow(10, 12));
+            $fee = BigDecimal::of($preview['fee'] ?: '0')->dividedBy(pow(10, 12), 12);
             $sendAmount = $unlockedBalance->minus($fee);
 
             return $this->send($account, $address, $sendAmount);

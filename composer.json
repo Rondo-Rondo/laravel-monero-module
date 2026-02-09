@@ -1,7 +1,7 @@
 {
-    "name": "mollsoft/laravel-monero-module",
+    "name": "rondo-rondo/laravel-monero-module",
     "description": "Laravel Monero Module",
-    "homepage": "https://github.com/mollsoft/laravel-monero-module",
+    "homepage": "https://github.com/Rondo-Rondo/laravel-monero-module",
     "license": "MIT",
     "authors": [
         {
