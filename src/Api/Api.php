@@ -51,8 +51,8 @@ class Api
             }
         }
         else {
-//            $response = Http::withDigestAuth($this->username ?? '', $this->password ?? '')
-            $response = Http::withoutVerifying()
+            $response = Http::withDigestAuth($this->username ?? '', $this->password ?? '')
+//            $response = Http::withoutVerifying()
                 ->timeout(60)
                 ->connectTimeout(10)
                 ->post('https://'.$this->host.':'.$this->port.'/json_rpc', [
