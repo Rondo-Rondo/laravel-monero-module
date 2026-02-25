@@ -30,6 +30,17 @@ class Api
         $this->daemon = $daemon;
     }
 
+    private function getScheme(): string
+    {
+        $localHosts = ['127.0.0.1', 'localhost', '0.0.0.0'];
+
+        if (in_array($this->host, $localHosts)) {
+            return 'http';
+        }
+
+        return 'https';
+    }
+
     public function request(string $method, array $params = [], bool $daemon = false): mixed
     {
         $requestId = Str::uuid()->toString();
@@ -55,7 +66,7 @@ class Api
 //            $response = Http::withoutVerifying()
                 ->timeout(60)
                 ->connectTimeout(10)
-                ->post('https://'.$this->host.':'.$this->port.'/json_rpc', [
+                ->post($this->getScheme() . '://'.$this->host.':'.$this->port.'/json_rpc', [
                     'jsonrpc' => '2.0',
                     'id' => $requestId,
                     'method' => $method,
