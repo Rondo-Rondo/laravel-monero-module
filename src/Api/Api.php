@@ -243,11 +243,44 @@ class Api
         ]);
     }
 
-    public function getAddressByIndex(int $accountIndex, array $addressIndices): array
+    public function getAddressByIndex(int $accountIndex, array $addressIndices): ?array
     {
-        return $this->request('get_address', [
+        return $this->requestOrNull('get_address', [
             'account_index' => $accountIndex,
             'address_index' => $addressIndices,
-        ]);
+        ], [-15]);
+    }
+
+    public function requestOrNull(string $method, array $params = [], array $ignoreErrorCodes = []): mixed
+    {
+        $requestId = Str::uuid()->toString();
+
+        $response = Http::withDigestAuth($this->username ?? '', $this->password ?? '')
+            ->timeout(60)
+            ->connectTimeout(10)
+            ->post($this->getScheme() . '://'.$this->host.':'.$this->port.'/json_rpc', [
+                'jsonrpc' => '2.0',
+                'id' => $requestId,
+                'method' => $method,
+                'params' => $params
+            ]);
+
+        $result = $response->json();
+        if (empty($result)) {
+            throw new \Exception($response->body());
+        }
+
+        if ($result['id'] !== $requestId) {
+            throw new \Exception('Request ID is not correct');
+        }
+
+        if (isset($result['error'])) {
+            if (in_array($result['error']['code'], $ignoreErrorCodes)) {
+                return null;
+            }
+            throw new \Exception($result['error']['message']);
+        }
+
+        return $result['result'] ?? $result;
     }
 }

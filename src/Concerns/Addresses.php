@@ -38,7 +38,6 @@ trait Addresses
             $api->openWallet($wallet->name, $wallet->password);
 
             if ($index !== null) {
-                // Проверить существует ли в БД
                 $existing = $account->addresses()->where('address_index', $index)->first();
                 if ($existing) {
                     return $existing;
@@ -46,41 +45,54 @@ trait Addresses
 
                 // Попробовать получить из wallet
                 $result = $api->getAddressByIndex($account->account_index, [$index]);
-                if (!empty($result['addresses'][0])) {
-                    return $account->addresses()->create([
-                        'wallet_id' => $wallet->id,
-                        'address' => $result['addresses'][0]['address'],
-                        'address_index' => $result['addresses'][0]['address_index'],
-                        'title' => $title,
-                    ]);
+                if ($result !== null && !empty($result['addresses'][0])) {
+                    return $account->addresses()->updateOrCreate(
+                        [
+                            'account_id' => $account->id,
+                            'address_index' => $result['addresses'][0]['address_index'],
+                        ],
+                        [
+                            'wallet_id' => $wallet->id,
+                            'address' => $result['addresses'][0]['address'],
+                            'title' => $title,
+                        ]
+                    );
                 }
 
-                // Если нет - создать последовательно
-                $last = $account->addresses()->orderBy('address_index', 'desc')->first();
-                $current = $last ? $last->address_index : -1;
+                $addressInfo = $api->getAddress($account->account_index);
+                $currentMaxIndex = count($addressInfo['addresses']) - 1;
 
-                while ($current < $index) {
+                while ($currentMaxIndex < $index) {
                     $created = $api->createAddress($account->account_index);
-                    $account->addresses()->create([
-                        'wallet_id' => $wallet->id,
-                        'address' => $created['address'],
-                        'address_index' => $created['address_index'],
-                        'title' => null,
-                    ]);
-                    $current = $created['address_index'];
+                    $account->addresses()->updateOrCreate(
+                        [
+                            'account_id' => $account->id,
+                            'address_index' => $created['address_index'],
+                        ],
+                        [
+                            'wallet_id' => $wallet->id,
+                            'address' => $created['address'],
+                            'title' => null,
+                        ]
+                    );
+                    $currentMaxIndex = $created['address_index'];
                 }
 
-                return $account->addresses()->where('address_index', $index)->first();
+                return $account->addresses()->where('address_index', $index)->firstOrFail();
             }
 
-            // Без индекса создаем по текущему порядку в кошельке
             $createAddress = $api->createAddress($account->account_index);
-            return $account->addresses()->create([
-                'wallet_id' => $wallet->id,
-                'address' => $createAddress['address'],
-                'address_index' => $createAddress['address_index'],
-                'title' => $title,
-            ]);
+            return $account->addresses()->updateOrCreate(
+                [
+                    'account_id' => $account->id,
+                    'address_index' => $createAddress['address_index'],
+                ],
+                [
+                    'wallet_id' => $wallet->id,
+                    'address' => $createAddress['address'],
+                    'title' => $title,
+                ]
+            );
         });
     }
 
