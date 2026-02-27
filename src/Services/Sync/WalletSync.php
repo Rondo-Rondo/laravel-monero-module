@@ -123,19 +123,6 @@ class WalletSync extends BaseConsole
                     'sync_at' => now(),
                 ]);
 
-            $this->log('Запрашиваем список адресов аккаунта '.$item['account_index'].' через метод get_address ...');
-            $getAddress = $this->api->getAddress($item['account_index']);
-            $this->log('Успешно: '.json_encode($getAddress));
-            foreach( $getAddress['addresses'] ?? [] as $itemAddress ) {
-                $this->wallet
-                    ->addresses()
-                    ->updateOrCreate([
-                        'account_id' => $account->id,
-                        'address' => $itemAddress['address'],
-                    ], [
-                        'address_index' => $itemAddress['address_index'],
-                    ]);
-            }
         }
 
         $this->wallet
@@ -198,7 +185,28 @@ class WalletSync extends BaseConsole
                 ->whereAddress($item['address'])
                 ->first();
 
-            $deposit = $address?->deposits()->updateOrCreate([
+            if (!$address) {
+                $account = $this->wallet
+                    ->accounts()
+                    ->where('account_index', $item['subaddr_index']['major'] ?? 0)
+                    ->first();
+
+                if ($account) {
+                    $address = $this->wallet->addresses()->create([
+                        'account_id' => $account->id,
+                        'address' => $item['address'],
+                        'address_index' => $item['subaddr_index']['minor'] ?? 0,
+                    ]);
+                    $this->log("Создан новый адрес в БД: {$item['address']} (index: $address->address_index)");
+                }
+            }
+
+            if (!$address) {
+                $this->log("Пропускаем транзакцию - адрес не найден: {$item['address']}", 'warning');
+                continue;
+            }
+
+            $deposit = $address->deposits()->updateOrCreate([
                 'txid' => $item['txid']
             ], [
                 'wallet_id' => $this->wallet->id,

@@ -26,6 +26,7 @@ class MoneroWallet extends Model
         'touch_at',
         'daemon_height',
         'wallet_height',
+        'last_synced_height',
     ];
 
     protected $hidden = [
@@ -42,6 +43,7 @@ class MoneroWallet extends Model
         'touch_at' => 'datetime',
         'daemon_height' => 'integer',
         'wallet_height' => 'integer',
+        'last_synced_height' => 'integer',
     ];
 
     public function node(): BelongsTo

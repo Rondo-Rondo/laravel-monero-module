@@ -64,21 +64,21 @@ trait Addresses
 
                 while ($currentMaxIndex < $index) {
                     $created = $api->createAddress($account->account_index);
-                    $account->addresses()->updateOrCreate(
-                        [
-                            'account_id' => $account->id,
-                            'address_index' => $created['address_index'],
-                        ],
-                        [
-                            'wallet_id' => $wallet->id,
-                            'address' => $created['address'],
-                            'title' => null,
-                        ]
-                    );
                     $currentMaxIndex = $created['address_index'];
                 }
 
-                return $account->addresses()->where('address_index', $index)->firstOrFail();
+                $result = $api->getAddressByIndex($account->account_index, [$index]);
+                return $account->addresses()->updateOrCreate(
+                    [
+                        'account_id' => $account->id,
+                        'address_index' => $index,
+                    ],
+                    [
+                        'wallet_id' => $wallet->id,
+                        'address' => $result['addresses'][0]['address'],
+                        'title' => $title,
+                    ]
+                );
             }
 
             $createAddress = $api->createAddress($account->account_index);
@@ -103,5 +103,53 @@ trait Addresses
         $details = $api->validateAddress($address);
 
         return (bool)$details['valid'];
+    }
+
+    public function ensureWalletHasAddressIndex(MoneroAccount $account, int $targetIndex): int
+    {
+        return Monero::generalAtomicLock($account->wallet, function () use ($account, $targetIndex) {
+            $wallet = $account->wallet;
+            $api = $wallet->node->api();
+            $api->openWallet($wallet->name, $wallet->password);
+
+            $addressInfo = $api->getAddress($account->account_index);
+            $currentMaxIndex = count($addressInfo['addresses']) - 1;
+
+            while ($currentMaxIndex < $targetIndex) {
+                $created = $api->createAddress($account->account_index);
+                $currentMaxIndex = $created['address_index'];
+            }
+
+            return $currentMaxIndex;
+        });
+    }
+
+    public function createAddressesInWalletOnly(MoneroAccount $account, int $count): int
+    {
+        return Monero::generalAtomicLock($account->wallet, function () use ($account, $count) {
+            $wallet = $account->wallet;
+            $api = $wallet->node->api();
+            $api->openWallet($wallet->name, $wallet->password);
+
+            $created = 0;
+            for ($i = 0; $i < $count; $i++) {
+                $api->createAddress($account->account_index);
+                $created++;
+            }
+
+            return $created;
+        });
+    }
+
+    public function getWalletAddressCount(MoneroAccount $account): int
+    {
+        return Monero::generalAtomicLock($account->wallet, function () use ($account) {
+            $wallet = $account->wallet;
+            $api = $wallet->node->api();
+            $api->openWallet($wallet->name, $wallet->password);
+
+            $addressInfo = $api->getAddress($account->account_index);
+            return count($addressInfo['addresses']);
+        });
     }
 }
