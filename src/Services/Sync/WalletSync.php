@@ -190,7 +190,6 @@ class WalletSync extends BaseConsole
                     ->accounts()
                     ->where('account_index', $item['subaddr_index']['major'] ?? 0)
                     ->first();
-
                 if ($account) {
                     $address = $this->wallet->addresses()->create([
                         'account_id' => $account->id,
