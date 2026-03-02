@@ -8,9 +8,9 @@ use Mollsoft\LaravelMoneroModule\Models\MoneroWallet;
 
 trait Accounts
 {
-    public function createAccount(MoneroWallet $wallet, ?string $title = null): MoneroAccount
+    public function createAccount(MoneroWallet $wallet, ?string $title = null, ?string $name = null): MoneroAccount
     {
-        return Monero::generalAtomicLock($wallet, function() use ($wallet, $title) {
+        return Monero::generalAtomicLock($wallet, function() use ($wallet, $title, $name) {
             $api = $wallet->node->api();
 
             if( !$wallet->node->isLocal() ) {
@@ -20,6 +20,7 @@ trait Accounts
             $createAccount = $api->createAccount();
 
             $account = $wallet->accounts()->create([
+                'name' => $name,
                 'title' => $title,
                 'base_address' => $createAccount['address'],
                 'account_index' => $createAccount['account_index'],

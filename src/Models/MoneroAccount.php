@@ -18,6 +18,7 @@ class MoneroAccount extends Model
 {
     protected $fillable = [
         'wallet_id',
+        'name',
         'base_address',
         'title',
         'account_index',

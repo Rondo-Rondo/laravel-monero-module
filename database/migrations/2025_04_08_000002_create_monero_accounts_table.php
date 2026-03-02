@@ -13,6 +13,9 @@ return new class extends Migration {
             $table->foreignIdFor(MoneroWallet::class, 'wallet_id')
                 ->constrained('monero_wallets')
                 ->cascadeOnDelete();
+            $table->string('name')
+                ->nullable()
+                ->unique();
             $table->string('base_address');
             $table->string('title')
                 ->nullable();
