@@ -19,11 +19,7 @@ return new class extends Migration {
             $table->decimal('amount_usd', 30, 12)->default(0);
             $table->decimal('fee', 30, 12);
             $table->decimal('fee_usd', 30, 12)->default(0);
-            $table->bigInteger('block_height')
-                ->nullable();
-            $table->integer('confirmations');
             $table->timestamp('time_at');
-            $table->json('data');
             $table->timestamps();
 
             $table->unique(['txid', 'address'], 'unique_index');

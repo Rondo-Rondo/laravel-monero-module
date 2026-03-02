@@ -26,6 +26,10 @@ return new class extends Migration {
             $table->integer('block_height')
                 ->nullable();
             $table->integer('confirmations');
+            $table->enum('status', ['pool', 'pending', 'confirmed'])
+                ->default('pending');
+            $table->boolean('processed')
+                ->default(false);
             $table->timestamp('time_at');
             $table->timestamps();
 

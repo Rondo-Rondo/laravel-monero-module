@@ -228,10 +228,7 @@ class WalletSync extends BaseConsole
                 'amount_usd' => (string)$this->convertToUsd($amount),
                 'fee' => (string)$fee,
                 'fee_usd' => (string)$this->convertToUsd($fee),
-                'block_height' => ($item['height'] ?? 0) ?: null,
-                'confirmations' => $item['confirmations'] ?? 0,
                 'time_at' => Date::createFromTimestamp($item['timestamp']),
-                'data' => json_encode($item),
                 'updated_at' => now(),
                 'created_at' => now(),
             ];
@@ -249,10 +246,7 @@ class WalletSync extends BaseConsole
                 'amount_usd' => (string)$this->convertToUsd($amount),
                 'fee' => (string)$fee,
                 'fee_usd' => (string)$this->convertToUsd($fee),
-                'block_height' => ($item['height'] ?? 0) ?: null,
-                'confirmations' => $item['confirmations'] ?? 0,
                 'time_at' => Date::createFromTimestamp($item['timestamp']),
-                'data' => json_encode($item),
                 'updated_at' => now(),
                 'created_at' => now(),
             ];
@@ -262,7 +256,7 @@ class WalletSync extends BaseConsole
             Monero::getModelTransaction()::upsert(
                 $rows,
                 ['txid', 'address'],
-                ['type', 'amount', 'fee', 'block_height', 'confirmations', 'time_at', 'data', 'updated_at']
+                ['type', 'amount', 'fee', 'time_at', 'updated_at']
             );
         }
 
