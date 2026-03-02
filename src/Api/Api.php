@@ -253,4 +253,15 @@ class Api
             'address_index' => $addressIndices,
         ], false, [-15]);
     }
+
+    public function getTransferByTxid(string $txid, ?int $accountIndex = null): ?array
+    {
+        $params = ['txid' => $txid];
+
+        if ($accountIndex !== null) {
+            $params['account_index'] = $accountIndex;
+        }
+
+        return $this->request('get_transfer_by_txid', $params, false, [-8]);
+    }
 }

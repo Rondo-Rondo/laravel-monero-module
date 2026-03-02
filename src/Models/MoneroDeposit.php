@@ -17,6 +17,7 @@ class MoneroDeposit extends Model
         'amount',
         'block_height',
         'confirmations',
+        'status',
         'processed',
         'time_at',
     ];
