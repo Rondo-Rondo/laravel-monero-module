@@ -17,6 +17,7 @@ class MoneroDeposit extends Model
         'amount',
         'block_height',
         'confirmations',
+        'processed',
         'time_at',
     ];
 
@@ -24,6 +25,7 @@ class MoneroDeposit extends Model
         'amount' => BigDecimalCast::class,
         'confirmations' => 'integer',
         'time_at' => 'datetime',
+        'processed' => 'boolean',
     ];
 
     public function wallet(): BelongsTo
