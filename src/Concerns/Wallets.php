@@ -119,12 +119,12 @@ trait Wallets
 
                     $getAddress = $api->getAddress($account->account_index);
 
-                    foreach ($getAddress['addresses'] as $addressItem) {
+                    if (isset($getAddress['addresses'][0])) {
                         $account->addresses()->create([
                             'wallet_id' => $wallet->id,
-                            'address' => $addressItem['address'],
-                            'address_index' => $addressItem['address_index'],
-                            'title' => $addressItem['label'] ?: null,
+                            'address' => $getAddress['addresses'][0]['address'],
+                            'address_index' => $getAddress['addresses'][0]['address_index'],
+                            'title' => $getAddress['addresses'][0]['label'] ?: null,
                         ]);
                     }
                 }
