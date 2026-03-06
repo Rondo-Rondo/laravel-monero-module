@@ -38,6 +38,31 @@ trait Wallets
         );
     }
 
+    public function generateSeed(string $language = 'English'): BIP39Convert
+    {
+        $binaryPath = config('monero.node.binary_path');
+        $scriptPath = config('monero.node.script_path');
+        if (!$binaryPath) {
+            throw new \Exception('Monero node configs is empty.');
+        }
+        $scriptPath = $scriptPath ?: __DIR__.'/../../bip39.cjs';
+
+        $process = Process::run([$binaryPath, $scriptPath, '--generate-monero', $language]);
+        $output = $process->failed() ? $process->errorOutput() : $process->output();
+        $json = @json_decode($output, true);
+
+        if ((!$json['success'] ?? false)) {
+            throw new \Exception($json['error'] ?? $process->output());
+        }
+
+        return new BIP39Convert(
+            address: $json['address'],
+            spendKey: $json['spendKey'],
+            viewKey: $json['viewKey'],
+            mnemonic: $json['mnemonic'],
+        );
+    }
+
     public function createWallet(
         MoneroNode $node,
         string $name,

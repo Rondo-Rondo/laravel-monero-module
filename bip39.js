@@ -7,7 +7,28 @@ import {
 
 async function main() {
     try {
-        const bip39Mnemonic = process.argv[2];
+        const mode = process.argv[2];
+
+        if (mode === '--generate-monero') {
+            const language = process.argv[3] || "English";
+
+            const wallet = await MoneroWalletKeys.createWallet({
+                networkType: MoneroNetworkType.MAINNET,
+                language: language,
+                proxyToWorker: false
+            });
+
+            console.log(JSON.stringify({
+                success: true,
+                address: await wallet.getPrimaryAddress(),
+                spendKey: await wallet.getPrivateSpendKey(),
+                viewKey: await wallet.getPrivateViewKey(),
+                mnemonic: await wallet.getSeed(),
+            }));
+            return;
+        }
+
+        const bip39Mnemonic = mode;
         const bip39Passphrase = process.argv[3] || "";
 
         if (!bip39Mnemonic || !bip39.validateMnemonic(bip39Mnemonic)) {
@@ -25,17 +46,12 @@ async function main() {
 
         const wallet = await MoneroWalletKeys.createWallet(config);
 
-        const address = await wallet.getPrimaryAddress();
-        const viewKey = await wallet.getPrivateViewKey();
-        const spendKey = await wallet.getPrivateSpendKey();
-        const mnemonic = await wallet.getSeed();
-
         console.log(JSON.stringify({
             success: true,
-            address,
-            spendKey,
-            viewKey,
-            mnemonic,
+            address: await wallet.getPrimaryAddress(),
+            spendKey: await wallet.getPrivateSpendKey(),
+            viewKey: await wallet.getPrivateViewKey(),
+            mnemonic: await wallet.getSeed(),
         }));
     } catch (error) {
         console.error(JSON.stringify({
