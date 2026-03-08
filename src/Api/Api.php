@@ -50,10 +50,10 @@ class Api
                 ->connectTimeout(10);
 
             if( count($params) ) {
-                $response = $response->post('https://'.$this->daemon.'/'.$method, $params);
+                $response = $response->post($this->daemon.'/'.$method, $params);
             }
             else {
-                $response = $response->get('https://'.$this->daemon.'/'.$method);
+                $response = $response->get($this->daemon.'/'.$method);
             }
 
             $result = $response->json();
