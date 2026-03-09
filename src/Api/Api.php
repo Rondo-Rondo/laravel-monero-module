@@ -55,7 +55,7 @@ class Api
             $daemonUser = $parsed['user'] ?? null;
             $daemonPass = $parsed['pass'] ?? null;
 
-            $http = Http::timeout(60)
+            $http = Http::timeout(120)
                 ->connectTimeout(10);
 
             if ($daemonUser && $daemonPass) {
@@ -81,7 +81,7 @@ class Api
         else {
             $response = Http::withDigestAuth($this->username ?? '', $this->password ?? '')
 //            $response = Http::withoutVerifying()
-                ->timeout(60)
+                ->timeout(120)
                 ->connectTimeout(10)
                 ->post($this->getScheme() . '://'.$this->host.':'.$this->port.'/json_rpc', [
                     'jsonrpc' => '2.0',
