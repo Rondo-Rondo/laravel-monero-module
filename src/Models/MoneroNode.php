@@ -55,6 +55,7 @@ class MoneroNode extends Model
                 username: $this->username,
                 password: $this->password,
                 daemon: $this->daemon,
+                proxy: config('monero.proxy'),
             );
 
             $api->getVersion();

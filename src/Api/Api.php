@@ -13,6 +13,7 @@ class Api
     protected ?string $username;
     protected ?string $password;
     protected ?string $daemon;
+    protected ?string $proxy;
     protected ?int $pid;
 
     public function __construct(
@@ -21,6 +22,7 @@ class Api
         ?string $username = null,
         ?string $password = null,
         ?string $daemon = null,
+        ?string $proxy = null,
     )
     {
         $this->host = $host;
@@ -28,6 +30,7 @@ class Api
         $this->username = $username;
         $this->password = $password;
         $this->daemon = $daemon;
+        $this->proxy = $proxy;
     }
 
     private function getScheme(): string
@@ -46,14 +49,28 @@ class Api
         $requestId = Str::uuid()->toString();
 
         if( $daemon && $this->daemon ) {
-            $response = Http::timeout(60)
+            $parsed = parse_url($this->daemon);
+            $daemonUrl = ($parsed['scheme'] ?? 'http') . '://' . $parsed['host']
+                . (isset($parsed['port']) ? ':' . $parsed['port'] : '');
+            $daemonUser = $parsed['user'] ?? null;
+            $daemonPass = $parsed['pass'] ?? null;
+
+            $http = Http::timeout(60)
                 ->connectTimeout(10);
 
+            if ($daemonUser && $daemonPass) {
+                $http = $http->withDigestAuth($daemonUser, $daemonPass);
+            }
+
+            if ($this->proxy && str_contains($parsed['host'] ?? '', '.onion')) {
+                $http = $http->withOptions(['proxy' => $this->proxy]);
+            }
+
             if( count($params) ) {
-                $response = $response->post($this->daemon.'/'.$method, $params);
+                $response = $http->post($daemonUrl.'/'.$method, $params);
             }
             else {
-                $response = $response->get($this->daemon.'/'.$method);
+                $response = $http->get($daemonUrl.'/'.$method);
             }
 
             $result = $response->json();
