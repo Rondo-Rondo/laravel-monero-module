@@ -14,9 +14,8 @@ trait Transfers
             $wallet = $account->wallet;
             $api = $wallet->node->api();
 
-            if( !$wallet->node->isLocal() ) {
-                $api->openWallet($wallet->name, $wallet->password);
-            }
+            $api->openWallet($wallet->name, $wallet->password);
+            $api->refresh();
 
             $destinationsArray = [];
             foreach( $destinations as $address => $amount ) {
