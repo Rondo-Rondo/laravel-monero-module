@@ -281,4 +281,61 @@ class Api
 
         return $this->request('get_transfer_by_txid', $params, false, [-8]);
     }
+
+    public function getViewKey(): ?string
+    {
+        return $this->queryKey('view_key');
+    }
+
+    public function getSpendKey(): ?string
+    {
+        return $this->queryKey('spend_key');
+    }
+
+    public function getTxKey(string $txid): ?string
+    {
+        $data = $this->request('get_tx_key', ['txid' => $txid]);
+
+        return $data['tx_key'] ?? null;
+    }
+
+    public function checkTxKey(string $txid, string $txKey, string $address): array
+    {
+        return $this->request('check_tx_key', [
+            'txid' => $txid,
+            'tx_key' => $txKey,
+            'address' => $address,
+        ]);
+    }
+
+    public function getTxProof(string $txid, string $address, ?string $message = null): ?string
+    {
+        $params = [
+            'txid' => $txid,
+            'address' => $address,
+        ];
+
+        if ($message !== null) {
+            $params['message'] = $message;
+        }
+
+        $data = $this->request('get_tx_proof', $params);
+
+        return $data['signature'] ?? null;
+    }
+
+    public function checkTxProof(string $txid, string $address, string $signature, ?string $message = null): array
+    {
+        $params = [
+            'txid' => $txid,
+            'address' => $address,
+            'signature' => $signature,
+        ];
+
+        if ($message !== null) {
+            $params['message'] = $message;
+        }
+
+        return $this->request('check_tx_proof', $params);
+    }
 }

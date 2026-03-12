@@ -2,9 +2,14 @@
 
 namespace Mollsoft\LaravelMoneroModule;
 
+use Mollsoft\LaravelMoneroModule\Commands\MoneroCheckTxKeyCommand;
+use Mollsoft\LaravelMoneroModule\Commands\MoneroCheckTxProofCommand;
 use Mollsoft\LaravelMoneroModule\Commands\MoneroCommand;
 use Mollsoft\LaravelMoneroModule\Commands\MoneroNodeSyncCommand;
 use Mollsoft\LaravelMoneroModule\Commands\MoneroSyncCommand;
+use Mollsoft\LaravelMoneroModule\Commands\MoneroTxInfoCommand;
+use Mollsoft\LaravelMoneroModule\Commands\MoneroTxKeyCommand;
+use Mollsoft\LaravelMoneroModule\Commands\MoneroViewKeyCommand;
 use Mollsoft\LaravelMoneroModule\Commands\MoneroWalletRPCCommand;
 use Mollsoft\LaravelMoneroModule\Commands\MoneroWalletSyncCommand;
 use Spatie\LaravelPackageTools\Commands\InstallCommand;
@@ -25,6 +30,8 @@ class MoneroServiceProvider extends PackageServiceProvider
                 MoneroWalletSyncCommand::class,
                 MoneroWalletRPCCommand::class,
                 MoneroNodeSyncCommand::class,
+                MoneroViewKeyCommand::class,
+                MoneroTxKeyCommand::class,
             ])
             ->hasInstallCommand(function(InstallCommand $command) {
                 $command
