@@ -15,7 +15,7 @@ class MoneroViewKeyCommand extends Command
     public function handle(): void
     {
         /** @var MoneroWallet $wallet */
-        $wallet = Monero::getModelWallet()::findOrFail($this->option-('wallet_id'));
+        $wallet = Monero::getModelWallet()::findOrFail($this->option('wallet_id'));
 
         Monero::generalAtomicLock($wallet, function () use ($wallet) {
             $api = $wallet->node->api();
