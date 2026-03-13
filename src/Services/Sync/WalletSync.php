@@ -238,6 +238,13 @@ class WalletSync extends BaseConsole
             $amount = (BigDecimal::of($item['amount'] ?: '0'))->dividedBy(pow(10, 12), 12);
             $fee = (BigDecimal::of($item['fee'] ?: '0'))->dividedBy(pow(10, 12), 12);
 
+            if ($amount->isZero() && !empty($item['destinations'])) {
+                $amount = BigDecimal::zero();
+                foreach ($item['destinations'] as $dest) {
+                    $amount = $amount->plus(BigDecimal::of($dest['amount'] ?: '0')->dividedBy(pow(10, 12), 12));
+                }
+            }
+
             $rows[] = [
                 'txid' => $item['txid'],
                 'address' => $item['address'],
@@ -250,6 +257,47 @@ class WalletSync extends BaseConsole
                 'updated_at' => now(),
                 'created_at' => now(),
             ];
+
+            foreach ($item['destinations'] ?? [] as $dest) {
+                $destAddress = $this->wallet
+                    ->addresses()
+                    ->whereAddress($dest['address'])
+                    ->first();
+
+                if (!$destAddress) {
+                    continue;
+                }
+
+                $destAmount = (BigDecimal::of($dest['amount'] ?: '0'))->dividedBy(pow(10, 12), 12);
+
+                $deposit = $destAddress->deposits()->updateOrCreate([
+                    'txid' => $item['txid']
+                ], [
+                    'wallet_id' => $this->wallet->id,
+                    'account_id' => $destAddress->account_id,
+                    'amount' => $destAmount,
+                    'block_height' => ($item['height'] ?? 0) ?: null,
+                    'confirmations' => $item['confirmations'] ?? 0,
+                    'time_at' => Date::createFromTimestamp($item['timestamp']),
+                ]);
+
+                if ($deposit?->wasRecentlyCreated) {
+                    $this->webhooks[] = $deposit;
+                }
+
+                $rows[] = [
+                    'txid' => $item['txid'],
+                    'address' => $dest['address'],
+                    'type' => 'in',
+                    'amount' => (string)$destAmount,
+                    'amount_usd' => (string)$this->convertToUsd($destAmount),
+                    'fee' => (string)$fee,
+                    'fee_usd' => (string)$this->convertToUsd($fee),
+                    'time_at' => Date::createFromTimestamp($item['timestamp']),
+                    'updated_at' => now(),
+                    'created_at' => now(),
+                ];
+            }
         }
 
         if( !empty($rows) ) {
