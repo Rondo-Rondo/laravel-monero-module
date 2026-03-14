@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\File;
 
 class WalletRPCInstaller extends BaseConsole
 {
-    protected string $version = 'v0.18.3.1';
+    protected string $version = 'v0.18.4.6';
     protected string $storagePath;
 
     public function __construct()
