@@ -2,6 +2,7 @@
 
 namespace Mollsoft\LaravelMoneroModule\Concerns;
 
+use Illuminate\Contracts\Cache\LockTimeoutException;
 use Mollsoft\LaravelMoneroModule\Facades\Monero;
 use Mollsoft\LaravelMoneroModule\Models\MoneroAccount;
 use Mollsoft\LaravelMoneroModule\Models\MoneroAddress;
@@ -105,40 +106,109 @@ trait Addresses
         return (bool)$details['valid'];
     }
 
-    public function ensureWalletHasAddressIndex(MoneroAccount $account, int $targetIndex): int
-    {
-        return Monero::generalAtomicLock($account->wallet, function () use ($account, $targetIndex) {
-            $wallet = $account->wallet;
+    public function ensureWalletHasAddressIndex(
+        MoneroAccount $account,
+        int $targetIndex,
+        int $batchSize = 1000,
+        ?callable $onBatch = null
+    ): int {
+        $wallet = $account->wallet;
+
+        $result = Monero::generalAtomicLock($wallet, function () use ($account, $wallet, $targetIndex) {
             $api = $wallet->node->api();
             $api->openWallet($wallet->name, $wallet->password);
+            return $api->getAddressByIndex($account->account_index, [$targetIndex]);
+        }, 300);
 
-            $addressInfo = $api->getAddress($account->account_index);
-            $currentMaxIndex = count($addressInfo['addresses']) - 1;
+        if ($result !== null && !empty($result['addresses'][0])) {
+            return $targetIndex;
+        }
 
-            while ($currentMaxIndex < $targetIndex) {
-                $created = $api->createAddress($account->account_index);
-                $currentMaxIndex = $created['address_index'];
+        $currentMaxIndex = Monero::generalAtomicLock($wallet, function () use ($account, $wallet) {
+            $api = $wallet->node->api();
+            $api->openWallet($wallet->name, $wallet->password);
+            $created = $api->createAddress($account->account_index);
+            return $created['address_index'];
+        }, 300);
+
+        if ($onBatch) {
+            $onBatch($currentMaxIndex, $targetIndex);
+        }
+
+        while ($currentMaxIndex < $targetIndex) {
+            try {
+                $currentMaxIndex = Monero::generalAtomicLock(
+                    $wallet,
+                    function () use ($account, $wallet, $targetIndex, $batchSize, $currentMaxIndex) {
+                        $api = $wallet->node->api();
+                        $api->openWallet($wallet->name, $wallet->password);
+
+                        $localMax = $currentMaxIndex;
+                        $created = 0;
+
+                        while ($localMax < $targetIndex && $created < $batchSize) {
+                            $result = $api->createAddress($account->account_index);
+                            $localMax = $result['address_index'];
+                            $created++;
+                        }
+
+                        return $localMax;
+                    },
+                    300
+                );
+            } catch (LockTimeoutException) {
+                sleep(5);
+                continue;
             }
 
-            return $currentMaxIndex;
-        });
+            if ($onBatch) {
+                $onBatch($currentMaxIndex, $targetIndex);
+            }
+        }
+
+        return $currentMaxIndex;
     }
 
-    public function createAddressesInWalletOnly(MoneroAccount $account, int $count): int
-    {
-        return Monero::generalAtomicLock($account->wallet, function () use ($account, $count) {
-            $wallet = $account->wallet;
-            $api = $wallet->node->api();
-            $api->openWallet($wallet->name, $wallet->password);
+    public function createAddressesInWalletOnly(
+        MoneroAccount $account,
+        int $count,
+        int $batchSize = 1000,
+        ?callable $onBatch = null
+    ): int {
+        $wallet = $account->wallet;
+        $totalCreated = 0;
 
-            $created = 0;
-            for ($i = 0; $i < $count; $i++) {
-                $api->createAddress($account->account_index);
-                $created++;
+        while ($totalCreated < $count) {
+            $batchCount = min($batchSize, $count - $totalCreated);
+
+            try {
+                $created = Monero::generalAtomicLock(
+                    $wallet,
+                    function () use ($account, $wallet, $batchCount) {
+                        $api = $wallet->node->api();
+                        $api->openWallet($wallet->name, $wallet->password);
+
+                        for ($i = 0; $i < $batchCount; $i++) {
+                            $api->createAddress($account->account_index);
+                        }
+
+                        return $batchCount;
+                    },
+                    300
+                );
+            } catch (LockTimeoutException) {
+                sleep(5);
+                continue;
             }
 
-            return $created;
-        });
+            $totalCreated += $created;
+
+            if ($onBatch) {
+                $onBatch($totalCreated, $count);
+            }
+        }
+
+        return $totalCreated;
     }
 
     public function getWalletAddressCount(MoneroAccount $account): int
