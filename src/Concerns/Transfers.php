@@ -92,7 +92,17 @@ trait Transfers
             $fee = BigDecimal::of($preview['fee'] ?: '0')->dividedBy(pow(10, 12), 12);
             $sendAmount = $unlockedBalance->minus($fee);
 
-            return $this->send($account, $address, $sendAmount);
+            $api->refresh();
+
+            return $api->request('transfer', [
+                'destinations' => [
+                    [
+                        'amount' => $sendAmount->multipliedBy(pow(10, 12))->toInt(),
+                        'address' => $address,
+                    ]
+                ],
+                'account_index' => $account->account_index,
+            ])['tx_hash'];
         });
     }
 }
