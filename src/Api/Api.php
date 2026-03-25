@@ -315,11 +315,16 @@ class Api
     {
         $params = ['txid' => $txid];
 
-//        if ($accountIndex !== null) {
-//            $params['account_index'] = $accountIndex;
-//        }
+        if ($accountIndex !== null) {
+            $params['account_index'] = $accountIndex;
+        }
 
         return $this->request('get_transfer_by_txid', $params, false, [-8]);
+    }
+
+    public function scanTx(array $txids): void
+    {
+        $this->request('scan_tx', ['txids' => $txids]);
     }
 
     public function getViewKey(): ?string
