@@ -82,5 +82,41 @@ class MoneroWallet extends Model
         return self::$plainPasswords[$this->name] ?? null;
     }
 
+    public function findAddressByAddress(string $address): ?MoneroAddress
+    {
+        return $this->addresses()
+            ->whereHas('cryptoAddress', fn($query) => $query->where('address', $address))
+            ->first();
+    }
 
+    public function resetAddressesBalances(): void
+    {
+        $this->addresses()->update(['balance' => 0]);
+
+        $cryptoAddressIds = $this->addresses()
+            ->pluck('crypto_address_id')
+            ->filter()
+            ->all();
+
+        if (empty($cryptoAddressIds)) {
+            return;
+        }
+
+        $addressModel = config('monero.crypto.address_model');
+        $addressModel::query()
+            ->whereIn('id', $cryptoAddressIds)
+            ->update(['sync_at' => now()]);
+
+        $coinId = (int)(\Illuminate\Support\Facades\DB::table('crypto_coins')
+            ->where('code', config('monero.crypto.coin_code', 'XMR'))
+            ->value('id') ?? 0);
+
+        if ($coinId) {
+            $balanceModel = config('monero.crypto.balance_model');
+            $balanceModel::query()
+                ->whereIn('crypto_address_id', $cryptoAddressIds)
+                ->where('crypto_coin_id', $coinId)
+                ->update(['balance' => 0, 'updated_at' => now()]);
+        }
+    }
 }

@@ -26,7 +26,7 @@ trait Accounts
                 'account_index' => $createAccount['account_index'],
             ]);
 
-            $account->addresses()->create([
+            $account->createAddress([
                 'wallet_id' => $wallet->id,
                 'address' => $createAccount['address'],
                 'address_index' => 0,

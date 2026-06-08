@@ -39,25 +39,19 @@ trait Addresses
             $api->openWallet($wallet->name, $wallet->password);
 
             if ($index !== null) {
-                $existing = $account->addresses()->where('address_index', $index)->first();
+                $existing = $account->findAddressByIndex($index);
                 if ($existing) {
                     return $existing;
                 }
 
-                // Попробовать получить из wallet
                 $result = $api->getAddressByIndex($account->account_index, [$index]);
                 if ($result !== null && !empty($result['addresses'][0])) {
-                    return $account->addresses()->updateOrCreate(
-                        [
-                            'account_id' => $account->id,
-                            'address_index' => $result['addresses'][0]['address_index'],
-                        ],
-                        [
-                            'wallet_id' => $wallet->id,
-                            'address' => $result['addresses'][0]['address'],
-                            'title' => $title,
-                        ]
-                    );
+                    return $account->createAddress([
+                        'wallet_id' => $wallet->id,
+                        'address' => $result['addresses'][0]['address'],
+                        'address_index' => $result['addresses'][0]['address_index'],
+                        'title' => $title,
+                    ]);
                 }
 
                 $addressInfo = $api->getAddress($account->account_index);
@@ -69,31 +63,21 @@ trait Addresses
                 }
 
                 $result = $api->getAddressByIndex($account->account_index, [$index]);
-                return $account->addresses()->updateOrCreate(
-                    [
-                        'account_id' => $account->id,
-                        'address_index' => $index,
-                    ],
-                    [
-                        'wallet_id' => $wallet->id,
-                        'address' => $result['addresses'][0]['address'],
-                        'title' => $title,
-                    ]
-                );
+                return $account->createAddress([
+                    'wallet_id' => $wallet->id,
+                    'address' => $result['addresses'][0]['address'],
+                    'address_index' => $index,
+                    'title' => $title,
+                ]);
             }
 
             $createAddress = $api->createAddress($account->account_index);
-            return $account->addresses()->updateOrCreate(
-                [
-                    'account_id' => $account->id,
-                    'address_index' => $createAddress['address_index'],
-                ],
-                [
-                    'wallet_id' => $wallet->id,
-                    'address' => $createAddress['address'],
-                    'title' => $title,
-                ]
-            );
+            return $account->createAddress([
+                'wallet_id' => $wallet->id,
+                'address' => $createAddress['address'],
+                'address_index' => $createAddress['address_index'],
+                'title' => $title,
+            ]);
         });
     }
 

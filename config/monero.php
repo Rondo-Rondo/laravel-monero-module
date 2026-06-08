@@ -43,6 +43,18 @@ return [
         'transaction' => \Mollsoft\LaravelMoneroModule\Models\MoneroTransaction::class,
     ],
 
+    'crypto' => [
+        'wallet_model' => null,
+        'address_model' => null,
+        'balance_model' => null,
+        'deposit_model' => null,
+        'transaction_model' => null,
+        'transaction_detail_model' => null,
+        'coin_code' => 'XMR',
+        'network' => 'XMR',
+        'required_confirmations' => 10,
+    ],
+
     /*
      * You cannot work with multiple wallets in parallel.
      * These settings are intended to be limiting.

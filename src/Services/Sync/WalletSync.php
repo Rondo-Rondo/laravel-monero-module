@@ -125,29 +125,23 @@ class WalletSync extends BaseConsole
 
         }
 
-        $this->wallet
-            ->addresses()
-            ->update([
-                'balance' => 0,
-                'unlocked_balance' => 0,
-                'sync_at' => now(),
-            ]);
+        $this->wallet->resetAddressesBalances();
 
         $this->log("Запрашиваем все балансы методом get_balance ...");
         $getBalance = $this->api->getAllBalance();
         $this->log('Успех: '.json_encode($getBalance));
         foreach( $getBalance['per_subaddress'] ?? [] as $item ) {
-            $isOK = $this->wallet
-                ->addresses()
-                ->where('address', $item['address'])
-                ->update([
-                    'balance' => (BigDecimal::of($item['balance'] ?: '0'))->dividedBy(pow(10, 12), 12),
-                    'unlocked_balance' => (BigDecimal::of($item['unlocked_balance'] ?: '0'))->dividedBy(pow(10, 12), 12),
-                    'sync_at' => now(),
-                ]);
-            if( $isOK ) {
-                $this->log('Баланс по адресу '.$item['address'].' успешно обновлен!', 'success');
+            $address = $this->wallet->findAddressByAddress($item['address']);
+            if( !$address ) {
+                continue;
             }
+
+            $address->balance = (BigDecimal::of($item['balance'] ?: '0'))->dividedBy(pow(10, 12), 12);
+            $address->unlocked_balance = (BigDecimal::of($item['unlocked_balance'] ?: '0'))->dividedBy(pow(10, 12), 12);
+            $address->sync_at = now();
+            $address->save();
+
+            $this->log('Баланс по адресу '.$item['address'].' успешно обновлен!', 'success');
         }
 
         return $this;
@@ -174,16 +168,13 @@ class WalletSync extends BaseConsole
 //        $transfers = array_merge($getTransfers['pool'] ?? [], $getTransfers['in'] ?? []);
         $transfers = array_merge([], $getTransfers['in'] ?? []);
 
-        $rows = [];
+        $transactionModel = Monero::getModelTransaction();
 
         foreach ($transfers as $item) {
             $amount = (BigDecimal::of($item['amount'] ?: '0'))->dividedBy(pow(10, 12), 12);
             $fee = (BigDecimal::of($item['fee'] ?: '0'))->dividedBy(pow(10, 12), 12);
 
-            $address = $this->wallet
-                ->addresses()
-                ->whereAddress($item['address'])
-                ->first();
+            $address = $this->wallet->findAddressByAddress($item['address']);
 
             if (!$address) {
                 $account = $this->wallet
@@ -191,8 +182,8 @@ class WalletSync extends BaseConsole
                     ->where('account_index', $item['subaddr_index']['major'] ?? 0)
                     ->first();
                 if ($account) {
-                    $address = $this->wallet->addresses()->create([
-                        'account_id' => $account->id,
+                    $address = $account->createAddress([
+                        'wallet_id' => $this->wallet->id,
                         'address' => $item['address'],
                         'address_index' => $item['subaddr_index']['minor'] ?? 0,
                     ]);
@@ -205,11 +196,8 @@ class WalletSync extends BaseConsole
                 continue;
             }
 
-            $deposit = $address->deposits()->updateOrCreate([
-                'txid' => $item['txid']
-            ], [
+            $deposit = $address->updateOrCreateDeposit($item['txid'], [
                 'wallet_id' => $this->wallet->id,
-                'account_id' => $address->account_id,
                 'amount' => $amount,
                 'block_height' => ($item['height'] ?? 0) ?: null,
                 'confirmations' => $item['confirmations'] ?? 0,
@@ -220,18 +208,16 @@ class WalletSync extends BaseConsole
                 $this->webhooks[] = $deposit;
             }
 
-            $rows[] = [
-                'txid' => $item['txid'],
-                'address' => $item['address'],
-                'type' => $item['type'],
-                'amount' => (string)$amount,
-                'amount_usd' => (string)$this->convertToUsd($amount),
-                'fee' => (string)$fee,
-                'fee_usd' => (string)$this->convertToUsd($fee),
-                'time_at' => Date::createFromTimestamp($item['timestamp']),
-                'updated_at' => now(),
-                'created_at' => now(),
-            ];
+            $transactionModel::record(
+                'in',
+                $item['txid'],
+                $item['address'],
+                $amount,
+                $this->convertToUsd($amount),
+                $fee,
+                $this->convertToUsd($fee),
+                Date::createFromTimestamp($item['timestamp'])
+            );
         }
 
         foreach( $getTransfers['out'] ?? [] as $item ) {
@@ -245,24 +231,19 @@ class WalletSync extends BaseConsole
                 }
             }
 
-            $rows[] = [
-                'txid' => $item['txid'],
-                'address' => $item['address'],
-                'type' => $item['type'],
-                'amount' => (string)$amount,
-                'amount_usd' => (string)$this->convertToUsd($amount),
-                'fee' => (string)$fee,
-                'fee_usd' => (string)$this->convertToUsd($fee),
-                'time_at' => Date::createFromTimestamp($item['timestamp']),
-                'updated_at' => now(),
-                'created_at' => now(),
-            ];
+            $transactionModel::record(
+                'out',
+                $item['txid'],
+                $item['address'],
+                $amount,
+                $this->convertToUsd($amount),
+                $fee,
+                $this->convertToUsd($fee),
+                Date::createFromTimestamp($item['timestamp'])
+            );
 
             foreach ($item['destinations'] ?? [] as $dest) {
-                $destAddress = $this->wallet
-                    ->addresses()
-                    ->whereAddress($dest['address'])
-                    ->first();
+                $destAddress = $this->wallet->findAddressByAddress($dest['address']);
 
                 if (!$destAddress) {
                     continue;
@@ -270,11 +251,8 @@ class WalletSync extends BaseConsole
 
                 $destAmount = (BigDecimal::of($dest['amount'] ?: '0'))->dividedBy(pow(10, 12), 12);
 
-                $deposit = $destAddress->deposits()->updateOrCreate([
-                    'txid' => $item['txid']
-                ], [
+                $deposit = $destAddress->updateOrCreateDeposit($item['txid'], [
                     'wallet_id' => $this->wallet->id,
-                    'account_id' => $destAddress->account_id,
                     'amount' => $destAmount,
                     'block_height' => ($item['height'] ?? 0) ?: null,
                     'confirmations' => $item['confirmations'] ?? 0,
@@ -285,27 +263,17 @@ class WalletSync extends BaseConsole
                     $this->webhooks[] = $deposit;
                 }
 
-                $rows[] = [
-                    'txid' => $item['txid'],
-                    'address' => $dest['address'],
-                    'type' => 'in',
-                    'amount' => (string)$destAmount,
-                    'amount_usd' => (string)$this->convertToUsd($destAmount),
-                    'fee' => (string)$fee,
-                    'fee_usd' => (string)$this->convertToUsd($fee),
-                    'time_at' => Date::createFromTimestamp($item['timestamp']),
-                    'updated_at' => now(),
-                    'created_at' => now(),
-                ];
+                $transactionModel::record(
+                    'in',
+                    $item['txid'],
+                    $dest['address'],
+                    $destAmount,
+                    $this->convertToUsd($destAmount),
+                    $fee,
+                    $this->convertToUsd($fee),
+                    Date::createFromTimestamp($item['timestamp'])
+                );
             }
-        }
-
-        if( !empty($rows) ) {
-            Monero::getModelTransaction()::upsert(
-                $rows,
-                ['txid', 'address'],
-                ['type', 'amount', 'fee', 'time_at', 'updated_at']
-            );
         }
 
         return $this;

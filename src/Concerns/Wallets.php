@@ -94,7 +94,7 @@ trait Wallets
                     'title' => 'Primary Account',
                 ]);
 
-                $account->addresses()->create([
+                $account->createAddress([
                     'wallet_id' => $wallet->id,
                     'address' => $item['base_address'],
                     'address_index' => 0,
@@ -145,7 +145,7 @@ trait Wallets
                     $getAddress = $api->getAddress($account->account_index);
 
                     if (isset($getAddress['addresses'][0])) {
-                        $account->addresses()->create([
+                        $account->createAddress([
                             'wallet_id' => $wallet->id,
                             'address' => $getAddress['addresses'][0]['address'],
                             'address_index' => $getAddress['addresses'][0]['address_index'],
@@ -219,7 +219,7 @@ trait Wallets
                     $getAddress = $api->getAddress($account->account_index);
 
                     foreach ($getAddress['addresses'] as $addressItem) {
-                        $account->addresses()->create([
+                        $account->createAddress([
                             'wallet_id' => $wallet->id,
                             'address' => $addressItem['address'],
                             'address_index' => $addressItem['address_index'],
